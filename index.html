@@ -3,240 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitMail - Cloud Edition</title>
-    <!-- Include the Supabase JS Library via CDN (No installation needed) -->
-    <script src="https://jsdelivr.net"></script>
+    <title>Website Under Construction</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0d1117;
-            color: #c9d1d9;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f7f9fa;
+            color: #333333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
             margin: 0;
-            padding: 20px;
+            text-align: center;
         }
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            max-width: 600px;
+            padding: 40px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
-        header {
-            text-align: center;
-            border-bottom: 1px solid #30363d;
-            padding-bottom: 20px;
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            color: #7f8c8d;
             margin-bottom: 30px;
         }
-        h1 { color: #58a6ff; margin: 0; }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
-        }
-        .card {
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 20px;
+        .icon {
+            font-size: 4rem;
             margin-bottom: 20px;
+            display: inline-block;
         }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            background-color: #0d1117;
-            border: 1px solid #30363d;
-            color: #c9d1d9;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #238636;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: bold;
-        }
-        button:hover { background-color: #2ea44f; }
-        .status-box {
-            padding: 10px;
-            border-radius: 4px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-            display: none;
-        }
-        .success { background-color: rgba(46, 164, 79, 0.2); border: 1px solid #2ea44f; color: #56d364; }
-        .error { background-color: rgba(248, 81, 73, 0.2); border: 1px solid #f85149; color: #ff7b72; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <h1>⚡ GitMail Cloud Protocol</h1>
-        <p>Zero-infrastructure high-priority communication routing</p>
-    </header>
-
-    <div class="grid">
-        <!-- LEFT COLUMN: AUTHENTICATION -->
-        <div>
-            <div class="card">
-                <h3>🔑 Account Management</h3>
-                <form id="authForm">
-                    <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" id="authEmail" placeholder="yourname@domain.com" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Access Key (Password)</label>
-                        <input type="password" id="authPass" required>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button type="button" id="btnSignUp" style="background-color: #216feb;">Sign Up</button>
-                        <button type="button" id="btnSignIn">Sign In</button>
-                    </div>
-                </form>
-                <div id="authStatus" class="status-box"></div>
-            </div>
-        </div>
-
-        <!-- RIGHT COLUMN: COMPOSE & TRANSMIT -->
-        <div class="card">
-            <h3>📨 Express Transmission Terminal</h3>
-            <form id="sendForm">
-                <div class="form-group">
-                    <label>Recipient Registered Email</label>
-                    <input type="email" id="recipient" placeholder="target-user@domain.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Message Payload</label>
-                    <textarea id="message" rows="5" placeholder="Enter message text..." required></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Attach Cloud Assets / Files</label>
-                    <input type="file" id="fileAttachment">
-                </div>
-                <button type="submit" id="btnSend">Deploy over Network Pipeline</button>
-            </form>
-            <div id="sendStatus" class="status-box"></div>
-        </div>
+    <div class="container">
+        <div class="icon">🚧</div>
+        <h1>Under Construction</h1>
+        <p>Our website is currently undergoing scheduled maintenance and upgrades. We will be back online shortly with a brand-new look. Thank you for your patience!</p>
     </div>
-</div>
 
-<script>
-    // ⚠️ REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDENTIALS FROM YOUR DASHBOARD
-    const SUPABASE_URL = "https://xihwowulusxvfodrapiw.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_g5kri5WD_IrzvopTtAivug_I3aP8FWh";
-
-    // Initialize the cloud backend client
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // Dom elements
-    const authStatus = document.getElementById('authStatus');
-    const sendStatus = document.getElementById('sendStatus');
-
-    // UI Helper for status messages
-    function showStatus(element, text, isError = false) {
-        element.innerText = text;
-        element.className = `status-box ${isError ? 'error' : 'success'}`;
-        element.style.display = 'block';
-    }
-
-    // 1. Account Creation (Sign Up)
-    document.getElementById('btnSignUp').addEventListener('click', async () => {
-        const email = document.getElementById('authEmail').value;
-        const password = document.getElementById('authPass').value;
-
-        const { data, error } = await supabase.auth.signUp({ email, password });
-
-        if (error) {
-            showStatus(authStatus, `Error: ${error.message}`, true);
-        } else {
-            showStatus(authStatus, "Account initialization pending! Please check your email inbox to confirm your registration.");
-        }
-    });
-
-    // 2. Account Login (Sign In)
-    document.getElementById('btnSignIn').addEventListener('click', async () => {
-        const email = document.getElementById('authEmail').value;
-        const password = document.getElementById('authPass').value;
-
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-        if (error) {
-            showStatus(authStatus, `Authorization Failed: ${error.message}`, true);
-        } else {
-            showStatus(authStatus, `Authenticated successfully as ${data.user.email}`);
-        }
-    });
-
-    // 3. Message Routing and File Transmission
-    document.getElementById('sendForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // Ensure user is signed in first
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            showStatus(sendStatus, "Transmission blocked: Please sign in or create an account first.", true);
-            return;
-        }
-
-        const recipient = document.getElementById('recipient').value;
-        const messageText = document.getElementById('message').value;
-        const fileInput = document.getElementById('fileAttachment');
-        let fileUrl = null;
-
-        try {
-            // Check if file uploading is requested
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${Math.random()}.${fileExt}`;
-                const filePath = `transmissions/${fileName}`;
-
-                // Upload asset directly to cloud storage bucket named 'assets'
-                // Note: You must create an 'assets' bucket in your Supabase dashboard
-                const { error: uploadError } = await supabase.storage
-                    .from('assets')
-                    .upload(filePath, file);
-
-                if (uploadError) throw uploadError;
-
-                // Obtain the cloud download link for the asset
-                const { data: urlData } = supabase.storage.from('assets').getPublicUrl(filePath);
-                fileUrl = urlData.publicUrl;
-            }
-
-            // Save the structured message data in the cloud database
-            // Note: You must create a table named 'messages' with columns: recipient, sender, body, and asset_url
-            const { error: dbError } = await supabase
-                .from('messages')
-                .insert([
-                    { 
-                        recipient: recipient, 
-                        sender: session.user.email, 
-                        body: messageText, 
-                        asset_url: fileUrl 
-                    }
-                ]);
-
-            if (dbError) throw dbError;
-
-            showStatus(sendStatus, "Payload successfully synchronized and routed across cloud network.");
-            document.getElementById('sendForm').reset();
-
-        } catch (err) {
-            showStatus(sendStatus, `Transmission error: ${err.message}`, true);
-        }
-    });
-</script>
 </body>
 </html>
