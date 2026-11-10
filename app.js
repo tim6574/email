@@ -1,5 +1,5 @@
 // Set this to your deployed Cloudflare Worker URL, ending in /api (no trailing slash).
-const API_BASE = "https://YOUR-WORKER-NAME.YOUR-SUBDOMAIN.workers.dev/api";
+const API_BASE = "https://friendmail-api.timothy-091.workers.dev/api";
 const TOKEN_KEY = "friendmail_session";
 
 const $ = (id) => document.getElementById(id);
