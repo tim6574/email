@@ -1,53 +1,105 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Website Under Construction</title>
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #f7f9fa;
-            color: #333333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
-        .container {
-            max-width: 600px;
-            padding: 40px;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            color: #2c3e50;
-        }
-        p {
-            font-size: 1.2rem;
-            line-height: 1.6;
-            color: #7f8c8d;
-            margin-bottom: 30px;
-        }
-        .icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            display: inline-block;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#172554">
+  <title>FriendMail</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <div class="container">
-        <div class="icon">🚧</div>
-        <h1>Under Construction</h1>
-        <p>our websight is brocken baaaaaa</p>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="FriendMail home"><span class="brand-icon">✉</span> FriendMail</a>
+    <div id="account-area" class="account-area" hidden>
+      <span id="signed-in-as"></span>
+      <button id="logout-button" class="button button-quiet" type="button">Log out</button>
     </div>
+  </header>
 
+  <main class="page-shell">
+    <section id="auth-view" class="auth-layout">
+      <div class="welcome-panel">
+        <p class="eyebrow">YOUR FRIENDS, IN ONE PLACE</p>
+        <h1>A little inbox<br>for your circle.</h1>
+        <p class="welcome-copy">Send notes to friends by username. Your messages stay in your inbox until you come back.</p>
+        <div class="welcome-decoration" aria-hidden="true"><span>✉</span><span>✉</span><span>✉</span></div>
+      </div>
+      <div class="auth-card">
+        <div class="auth-tabs" role="tablist" aria-label="Account options">
+          <button class="auth-tab active" id="login-tab" type="button" role="tab" aria-selected="true">Log in</button>
+          <button class="auth-tab" id="register-tab" type="button" role="tab" aria-selected="false">Create account</button>
+        </div>
+        <form id="auth-form">
+          <h2 id="auth-title">Welcome back</h2>
+          <p id="auth-description" class="muted">Log in to check your messages.</p>
+          <label for="username">Username</label>
+          <input id="username" name="username" autocomplete="username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" placeholder="your_username" required>
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" minlength="10" placeholder="At least 10 characters" required>
+          <p id="password-help" class="field-help" hidden>Use at least 10 characters. Usernames can contain letters, numbers, and underscores.</p>
+          <button id="auth-submit" class="button button-primary button-full" type="submit">Log in</button>
+          <p id="auth-error" class="notice error" role="alert" hidden></p>
+        </form>
+        <p class="small-print">FriendMail accounts are separate from your GitHub account. Keep your password safe; this starter version does not include password recovery.</p>
+      </div>
+    </section>
+
+    <section id="mail-view" class="mail-layout" hidden>
+      <aside class="sidebar">
+        <button id="compose-open" class="button button-primary compose-button" type="button">＋ Compose</button>
+        <nav class="folder-nav" aria-label="Mail folders">
+          <button class="folder active" data-folder="inbox" type="button"><span>▣</span> Inbox <span id="inbox-count" class="count"></span></button>
+          <button class="folder" data-folder="sent" type="button"><span>↗</span> Sent</button>
+        </nav>
+        <div class="sidebar-note">
+          <strong>FriendMail tip</strong>
+          <p>To message someone, you'll need their exact username.</p>
+        </div>
+      </aside>
+
+      <section class="mail-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">YOUR MAIL</p>
+            <h1 id="folder-title">Inbox</h1>
+          </div>
+          <button id="refresh-button" class="button button-quiet" type="button">↻ Refresh</button>
+        </div>
+        <div id="status-message" class="notice" role="status" hidden></div>
+        <div id="message-list" class="message-list"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="compose-dialog" class="compose-dialog">
+    <form id="compose-form" method="dialog">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">NEW MESSAGE</p><h2>Compose</h2></div>
+        <button id="compose-close" class="icon-button" type="button" aria-label="Close">×</button>
+      </div>
+      <label for="recipient">To (username)</label>
+      <input id="recipient" name="recipient" maxlength="20" placeholder="friend_username" required>
+      <label for="subject">Subject</label>
+      <input id="subject" name="subject" maxlength="120" placeholder="What's this about?" required>
+      <label for="body">Message</label>
+      <textarea id="body" name="body" rows="7" maxlength="5000" placeholder="Write your message..." required></textarea>
+      <div class="compose-footer">
+        <span id="compose-error" class="inline-error" role="alert"></span>
+        <button id="send-button" class="button button-primary" type="submit">Send message ↗</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="message-dialog" class="message-dialog">
+    <div class="dialog-heading">
+      <div><p class="eyebrow" id="detail-meta"></p><h2 id="detail-subject"></h2></div>
+      <button id="detail-close" class="icon-button" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="detail-from" id="detail-from"></div>
+    <div id="detail-body" class="detail-body"></div>
+  </dialog>
+
+  <footer class="site-footer">FriendMail <span>·</span> A small place to keep in touch</footer>
+  <script src="app.js"></script>
 </body>
 </html>
