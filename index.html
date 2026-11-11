@@ -1,147 +1,189 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f6fc">
   <title>FriendMail</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
 <body>
 
-  <!-- Status Toast -->
-  <div id="status-message" hidden></div>
-
-  <!-- Auth View -->
-  <div id="auth-view" class="view-container">
-    <div class="auth-card">
-      <div class="auth-tabs">
-        <button id="login-tab" class="active">Login</button>
-        <button id="register-tab">Register</button>
+  <!-- AUTHENTICATION VIEW -->
+  <section id="auth-view" class="auth-wrapper">
+    <div class="auth-box">
+      <div class="auth-header">
+        <span class="material-symbols-outlined auth-logo-icon">mail</span>
+        <h2>FriendMail</h2>
+        <p id="auth-description">Sign in to continue</p>
       </div>
-      <h2 id="auth-title">Welcome back</h2>
-      <p id="auth-description">Sign in to continue</p>
       
-      <form id="auth-form">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="login-tab" type="button">Sign In</button>
+        <button class="auth-tab" id="register-tab" type="button">Create Account</button>
+      </div>
+
+      <form id="auth-form" class="auth-form">
+        <h3 id="auth-title" class="sr-only">Welcome back</h3>
+        
+        <div class="input-group">
+          <input id="username" name="username" type="text" autocomplete="username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" required placeholder=" ">
+          <label for="username">Username</label>
+        </div>
+        
+        <div class="input-group">
+          <input id="password" name="password" type="password" autocomplete="current-password" minlength="10" required placeholder=" ">
+          <label for="password">Password</label>
+        </div>
+        
+        <p id="password-help" class="helper-text" hidden>At least 10 characters.</p>
         <div id="auth-error" class="error-text" hidden></div>
-        <input type="text" id="username" placeholder="Username" required autocomplete="username">
-        <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
-        <div id="password-help" class="help-text" hidden>Use a strong password.</div>
-        <button type="submit" id="auth-submit" class="btn-primary">Sign In</button>
+        
+        <div class="auth-actions">
+          <button id="auth-submit" class="md-button md-primary" type="submit">Sign In</button>
+        </div>
       </form>
     </div>
-  </div>
+  </section>
 
-  <!-- Mail View -->
-  <div id="mail-view" class="view-container" hidden>
-    <header class="app-header">
-      <div class="header-left">
-        <h1>FriendMail</h1>
+  <!-- MAIN MAIL VIEW -->
+  <section id="mail-view" class="app-layout" hidden>
+    
+    <!-- Top App Bar -->
+    <header class="app-bar">
+      <div class="bar-left">
+        <button class="icon-button" aria-label="Menu"><span class="material-symbols-outlined">menu</span></button>
+        <a class="brand" href="#"><span class="material-symbols-outlined brand-icon">mail</span><span class="brand-text">FriendMail</span></a>
       </div>
-      <div class="header-search">
-        <span class="material-symbols-outlined search-icon">search</span>
-        <input type="text" id="message-search" placeholder="Search mail...">
-      </div>
-      <div class="header-right">
-        <button id="theme-toggle" class="icon-btn" title="Toggle Theme">
-          <span class="material-symbols-outlined">dark_mode</span>
-        </button>
-        <div class="user-profile">
-          <div id="signed-in-avatar" class="avatar">?</div>
-          <span id="signed-in-as"></span>
+      
+      <div class="bar-center">
+        <div class="search-box">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input id="message-search" type="search" placeholder="Search mail" aria-label="Search">
         </div>
-        <button id="logout-button" class="icon-btn" title="Log Out">
-          <span class="material-symbols-outlined">logout</span>
-        </button>
+      </div>
+      
+      <div class="bar-right" id="account-area">
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle theme"><span class="material-symbols-outlined">dark_mode</span></button>
+        <div class="user-avatar-wrap" title="Account settings">
+          <div class="user-avatar" id="signed-in-avatar">U</div>
+          <div class="user-dropdown">
+            <div class="dropdown-header">
+              <span id="signed-in-as"></span>
+            </div>
+            <button id="logout-button" class="dropdown-item"><span class="material-symbols-outlined">logout</span> Sign out</button>
+          </div>
+        </div>
       </div>
     </header>
 
     <div class="app-body">
-      <aside class="sidebar">
-        <button id="compose-open" class="btn-primary compose-btn">
-          <span class="material-symbols-outlined">edit</span> Compose
+      <!-- Sidebar Drawer -->
+      <aside class="app-drawer">
+        <button id="compose-open" class="compose-fab" type="button">
+          <span class="material-symbols-outlined">edit</span>
+          <span class="fab-text">Compose</span>
         </button>
-        <nav class="folder-list">
-          <button class="folder active" data-folder="inbox">
-            <span class="material-symbols-outlined">inbox</span> Inbox 
-            <span id="inbox-count" class="badge"></span>
+        
+        <nav class="drawer-nav">
+          <button class="folder active" data-folder="inbox" type="button">
+            <span class="material-symbols-outlined">inbox</span>
+            <span class="folder-name">Inbox</span>
+            <span id="inbox-count" class="folder-badge"></span>
           </button>
-          <button class="folder" data-folder="sent">
-            <span class="material-symbols-outlined">send</span> Sent
+          <button class="folder" data-folder="sent" type="button">
+            <span class="material-symbols-outlined">send</span>
+            <span class="folder-name">Sent</span>
           </button>
         </nav>
       </aside>
 
-      <main class="message-area">
-        <div class="toolbar">
-          <button id="refresh-button" class="icon-btn" title="Refresh">
-            <span class="material-symbols-outlined">refresh</span>
-          </button>
-          <span id="message-total" class="meta-text"></span>
+      <!-- Main Mail Content -->
+      <main class="app-content">
+        <div class="content-toolbar">
+          <button id="refresh-button" class="icon-button" type="button" title="Refresh"><span class="material-symbols-outlined">refresh</span></button>
+          <button class="icon-button" type="button" title="More"><span class="material-symbols-outlined">more_vert</span></button>
+          <div class="toolbar-spacer"></div>
+          <span id="message-total" class="pagination-text"></span>
         </div>
-        <div id="message-list">
-          <!-- Messages render here -->
+        
+        <div id="status-message" class="toast" hidden></div>
+        
+        <div class="mail-list-container">
+          <div id="message-list" class="message-list"></div>
         </div>
       </main>
     </div>
-  </div>
+  </section>
 
-  <!-- Compose Dialog -->
-  <dialog id="compose-dialog" class="modal">
-    <div class="dialog-header">
-      <h3>New Message</h3>
-      <div style="display: flex; gap: 4px;">
-        <button type="button" id="compose-maximize" class="icon-btn" title="Toggle Fullscreen">
-          <span class="material-symbols-outlined">fullscreen</span>
-        </button>
-        <button type="button" id="compose-close" class="icon-btn" title="Close">
-          <span class="material-symbols-outlined">close</span>
-        </button>
+  <!-- COMPOSE DIALOG (Floating Bottom Right) -->
+  <dialog id="compose-dialog" class="floating-compose">
+    <form id="compose-form" method="dialog">
+      <div class="compose-header">
+        <h3>New Message</h3>
+        <button id="compose-close" class="icon-button small" type="button"><span class="material-symbols-outlined">close</span></button>
       </div>
-    </div>
-    <form id="compose-form">
-      <div id="compose-error" class="error-text"></div>
-      <input type="text" id="recipient" placeholder="To" required list="contacts-list">
-      <datalist id="contacts-list"></datalist>
-      <input type="text" id="subject" placeholder="Subject">
-      
-      <div class="rich-text-toolbar">
-        <button type="button" class="format-btn icon-btn" data-command="bold" title="Bold"><span class="material-symbols-outlined">format_bold</span></button>
-        <button type="button" class="format-btn icon-btn" data-command="italic" title="Italic"><span class="material-symbols-outlined">format_italic</span></button>
-        <button type="button" class="format-btn icon-btn" data-command="underline" title="Underline"><span class="material-symbols-outlined">format_underlined</span></button>
-        <button type="button" class="format-btn icon-btn" data-command="createLink" title="Insert Link"><span class="material-symbols-outlined">link</span></button>
-        <button type="button" class="format-btn icon-btn" data-command="insertUnorderedList" title="Bullet List"><span class="material-symbols-outlined">format_list_bulleted</span></button>
+      <div class="compose-body">
+        <div class="compose-field">
+          <label for="recipient">To</label>
+          <!-- Using a datalist for the Contacts autocomplete -->
+          <input id="recipient" name="recipient" list="contacts-list" maxlength="20" required autocomplete="off">
+        </div>
+        <div class="compose-field">
+          <label for="subject" class="sr-only">Subject</label>
+          <input id="subject" name="subject" maxlength="120" placeholder="Subject" required>
+        </div>
+        
+        <!-- Rich Text Toolbar -->
+        <div class="compose-toolbar">
+          <button type="button" class="icon-button small format-btn" data-command="bold" title="Bold"><span class="material-symbols-outlined">format_bold</span></button>
+          <button type="button" class="icon-button small format-btn" data-command="italic" title="Italic"><span class="material-symbols-outlined">format_italic</span></button>
+          <button type="button" class="icon-button small format-btn" data-command="underline" title="Underline"><span class="material-symbols-outlined">format_underlined</span></button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="icon-button small format-btn" data-command="insertUnorderedList" title="Bullet List"><span class="material-symbols-outlined">format_list_bulleted</span></button>
+          <button type="button" class="icon-button small format-btn" data-command="createLink" title="Insert Link"><span class="material-symbols-outlined">link</span></button>
+        </div>
+        
+        <!-- Rich Text Editor area instead of textarea -->
+        <div id="body" class="rich-text-editor" contenteditable="true" data-placeholder="Write your message..."></div>
       </div>
-      <div id="body" class="rich-text-editor" contenteditable="true" aria-placeholder="Type your message here..."></div>
-      
-      <div class="dialog-footer">
-        <button type="submit" id="send-button" class="btn-primary">Send</button>
+      <div class="compose-footer">
+        <button id="send-button" class="md-button md-primary rounded" type="submit">Send</button>
+        <span id="compose-error" class="error-text"></span>
       </div>
     </form>
   </dialog>
 
-  <!-- Message Detail Dialog -->
-  <dialog id="message-dialog" class="modal detail-modal">
-    <div class="dialog-header">
-      <h3 id="detail-subject"></h3>
-      <button type="button" id="detail-close" class="icon-btn" title="Close">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-    <div class="detail-header-info">
-      <div id="detail-avatar" class="avatar"></div>
-      <div class="detail-sender-info">
-        <div id="detail-from"></div>
-        <div id="detail-meta" class="meta-text"></div>
+  <!-- READ MESSAGE DIALOG -->
+  <dialog id="message-dialog" class="read-dialog">
+    <div class="read-header">
+      <div class="read-subject-row">
+        <h2 id="detail-subject"></h2>
+      </div>
+      <div class="read-meta-row">
+        <div class="read-sender">
+          <div class="user-avatar small" id="detail-avatar"></div>
+          <div>
+            <div id="detail-from" class="sender-name"></div>
+            <div class="recipient-name">to me</div>
+          </div>
+        </div>
+        <div class="read-date" id="detail-meta"></div>
       </div>
     </div>
-    <div id="detail-body" class="detail-content"></div>
-    <div class="dialog-footer">
-      <button type="button" id="reply-button" class="btn-outline">
-        <span class="material-symbols-outlined">reply</span> Reply
-      </button>
+    <div id="detail-body" class="read-body rich-text-content"></div>
+    <div class="read-actions">
+      <button id="reply-button" class="md-button md-outlined" type="button"><span class="material-symbols-outlined">reply</span> Reply</button>
+      <button id="detail-close" class="md-button md-text" type="button">Close</button>
     </div>
   </dialog>
+
+  <!-- Dynamic Contacts List -->
+  <datalist id="contacts-list"></datalist>
 
   <script src="app.js"></script>
 </body>
