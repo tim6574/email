@@ -72,8 +72,13 @@ let toastTimeout;
 function showNotice(message, isError = false) {
   const el = $("status-message"); 
   el.textContent = message;
-  el.style.backgroundColor = isError ? "var(--sys-error)" : "var(--sys-on-surface)";
-  el.style.color = isError ? "#FFF" : "var(--sys-bg)";
+  if (isError) {
+    el.style.backgroundColor = "var(--sys-error)";
+    el.style.color = "#FFF";
+  } else {
+    el.style.backgroundColor = "var(--pm-purple)";
+    el.style.color = "#FFF";
+  }
   el.hidden = !message;
   clearTimeout(toastTimeout);
   if (message) toastTimeout = setTimeout(() => el.hidden = true, 4000);
@@ -105,16 +110,32 @@ function updateSearch() {
   renderMessages();
 }
 
+// New: Generate Skeleton UI for loading state
+function renderSkeletons() {
+  const skeletons = Array(6).fill(`<div class="skeleton-row">
+    <div class="skeleton-box" style="width: 24px; border-radius: 50%;"></div>
+    <div class="skeleton-box" style="width: 150px;"></div>
+    <div class="skeleton-box" style="flex: 1;"></div>
+    <div class="skeleton-box" style="width: 80px;"></div>
+  </div>`).join("");
+  $("message-list").innerHTML = skeletons;
+}
+
 async function loadFolder(folder = state.folder) {
   state.folder = folder;
   document.querySelectorAll(".folder").forEach(button => button.classList.toggle("active", button.dataset.folder === folder));
   $("message-search").value = "";
-  $("message-list").innerHTML = '<div class="empty-state">Loading messages...</div>';
+  renderSkeletons(); // Call front-end feature during load
+  
   try {
     const data = await api(folder === "inbox" ? "/inbox" : "/sent");
     state.messages = data.messages || [];
     if (folder === "inbox") {
-      $("inbox-count").textContent = state.messages.length ? state.messages.length : "";
+      const readList = getReadMessages();
+      const unreadCount = state.messages.filter(m => !readList.includes(getMessageId(m))).length;
+      $("inbox-count").textContent = unreadCount > 0 ? unreadCount : "";
+    } else {
+      $("inbox-count").textContent = ""; // clear if not inbox
     }
     updateSearch();
   } catch (error) {
@@ -152,9 +173,10 @@ function renderMessages() {
     const isUnread = state.folder === "inbox" && !readList.includes(getMessageId(m));
     const unreadClass = isUnread ? "unread" : "";
     
+    // Grid structured row with Quick Actions (UI only feature)
     return `<div class="message-row ${unreadClass}" data-index="${index}">
       <div class="msg-icons">
-        <span class="material-symbols-outlined" style="font-size: 18px;">${isUnread ? "mark_email_unread" : "mail"}</span>
+        <span class="material-symbols-outlined" style="font-size: 20px;">${isUnread ? "" : "mail"}</span>
       </div>
       <div class="msg-sender">${escapeHtml(person)}</div>
       <div class="msg-content">
@@ -162,10 +184,24 @@ function renderMessages() {
         <span class="msg-snippet"> - ${escapeHtml(preview)}</span>
       </div>
       <div class="msg-date">${escapeHtml(formatDate(m.created_at))}</div>
+      <div class="msg-actions">
+        <button class="icon-btn small action-del" title="Delete (Local)" data-index="${index}"><span class="material-symbols-outlined">delete</span></button>
+      </div>
     </div>`;
   }).join("");
   
-  list.querySelectorAll(".message-row").forEach(row => row.addEventListener("click", () => openMessage(messages[Number(row.dataset.index)])));
+  // Attach Event Listeners to rows
+  list.querySelectorAll(".message-row").forEach(row => {
+    row.addEventListener("click", (e) => {
+      // Prevent opening message if clicking a quick action button
+      if (e.target.closest('.action-del')) {
+        row.style.display = 'none'; // UI-only delete feature
+        showNotice("Message moved to trash");
+        return;
+      }
+      openMessage(messages[Number(row.dataset.index)]);
+    });
+  });
 }
 
 function openMessage(message) {
@@ -177,6 +213,9 @@ function openMessage(message) {
     if (!readList.includes(msgId)) {
       readList.push(msgId);
       localStorage.setItem(READ_KEY, JSON.stringify(readList));
+      // Update unread count dynamically
+      const unreadCount = state.messages.filter(m => !readList.includes(getMessageId(m))).length;
+      $("inbox-count").textContent = unreadCount > 0 ? unreadCount : "";
       renderMessages();
     }
   }
@@ -216,6 +255,14 @@ function applyTheme(theme) {
   localStorage.setItem(THEME_KEY, theme);
 }
 
+// Sidebar Toggle Feature (UI Only)
+const sidebarToggleBtn = $("sidebar-toggle");
+if (sidebarToggleBtn) {
+  sidebarToggleBtn.addEventListener("click", () => {
+    $("app-sidebar").classList.toggle("collapsed");
+  });
+}
+
 // Event Listeners
 $("login-tab").addEventListener("click", () => setMode("login"));
 $("register-tab").addEventListener("click", () => setMode("register"));
@@ -223,7 +270,7 @@ $("register-tab").addEventListener("click", () => setMode("register"));
 $("auth-form").addEventListener("submit", async event => {
   event.preventDefault(); $("auth-error").hidden = true;
   const username = $("username").value.trim(), password = $("password").value;
-  const submit = $("auth-submit"); submit.disabled = true; submit.textContent = "Please wait...";
+  const submit = $("auth-submit"); submit.disabled = true; submit.textContent = "Authenticating...";
   try {
     const data = await api(state.mode === "login" ? "/login" : "/register", {method:"POST",body:JSON.stringify({username,password})});
     setToken(data.token); state.user = data.user; $("password").value = ""; showMail(); await loadFolder("inbox");
@@ -240,7 +287,7 @@ $("compose-open").addEventListener("click", () => openCompose());
 $("compose-close").addEventListener("click", () => $("compose-dialog").close());
 $("detail-close").addEventListener("click", () => $("message-dialog").close());
 
-// FULLSCREEN TOGGLE (Safe Implementation)
+// FULLSCREEN TOGGLE
 const maximizeBtn = $("compose-maximize");
 if (maximizeBtn) {
   maximizeBtn.addEventListener("click", () => {
@@ -293,7 +340,7 @@ $("compose-form").addEventListener("submit", async event => {
   }
   
   const recipient = $("recipient").value.trim();
-  const send = $("send-button"); send.disabled = true; send.textContent = "Sending...";
+  const send = $("send-button"); send.disabled = true; send.innerHTML = '<span class="material-symbols-outlined">sync</span> Sending...';
   
   try {
     await api("/send", {method:"POST",body:JSON.stringify({
@@ -307,7 +354,7 @@ $("compose-form").addEventListener("submit", async event => {
     localStorage.removeItem(DRAFT_KEY); 
     await loadFolder("sent"); showNotice("Message sent.");
   } catch(error) { $("compose-error").textContent = error.message; $("compose-error").hidden = false; }
-  finally { send.disabled = false; send.textContent = 'Send'; }
+  finally { send.disabled = false; send.innerHTML = '<span class="material-symbols-outlined">send</span> Send'; }
 });
 
 $("theme-toggle").addEventListener("click", () => applyTheme(document.body.classList.contains("dark") ? "light" : "dark"));
