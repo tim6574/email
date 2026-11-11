@@ -132,7 +132,8 @@ input, textarea { font-family: inherit; }
 .message-row.unread .msg-icons { color: var(--sys-primary); }
 
 /* -- COMPOSE DIALOG & RICH TEXT -- */
-.floating-compose { position: fixed; bottom: 0; right: 80px; margin: 0; width: 500px; height: 500px; max-height: calc(100vh - 80px); background: var(--sys-surface); border: none; border-radius: 8px 8px 0 0; box-shadow: var(--elevation-4); padding: 0; display: flex; flex-direction: column; }
+.floating-compose { position: fixed; bottom: 0; right: 80px; margin: 0; width: 500px; height: 500px; max-height: calc(100vh - 80px); background: var(--sys-surface); border: none; border-radius: 8px 8px 0 0; box-shadow: var(--elevation-4); padding: 0; display: flex; flex-direction: column; transition: all 0.3s ease; }
+.floating-compose.fullscreen { width: 100vw; height: 100vh; max-height: 100vh; right: 0; bottom: 0; border-radius: 0; }
 .floating-compose:not([open]) { display: none; }
 .floating-compose[open] { display: flex; }
 .floating-compose::backdrop { background: transparent; }
