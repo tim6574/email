@@ -130,13 +130,26 @@
       <div class="compose-body">
         <div class="compose-field">
           <label for="recipient">To</label>
-          <input id="recipient" name="recipient" maxlength="20" required>
+          <!-- Using a datalist for the Contacts autocomplete -->
+          <input id="recipient" name="recipient" list="contacts-list" maxlength="20" required autocomplete="off">
         </div>
         <div class="compose-field">
           <label for="subject" class="sr-only">Subject</label>
           <input id="subject" name="subject" maxlength="120" placeholder="Subject" required>
         </div>
-        <textarea id="body" name="body" maxlength="5000" required></textarea>
+        
+        <!-- Rich Text Toolbar -->
+        <div class="compose-toolbar">
+          <button type="button" class="icon-button small format-btn" data-command="bold" title="Bold"><span class="material-symbols-outlined">format_bold</span></button>
+          <button type="button" class="icon-button small format-btn" data-command="italic" title="Italic"><span class="material-symbols-outlined">format_italic</span></button>
+          <button type="button" class="icon-button small format-btn" data-command="underline" title="Underline"><span class="material-symbols-outlined">format_underlined</span></button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="icon-button small format-btn" data-command="insertUnorderedList" title="Bullet List"><span class="material-symbols-outlined">format_list_bulleted</span></button>
+          <button type="button" class="icon-button small format-btn" data-command="createLink" title="Insert Link"><span class="material-symbols-outlined">link</span></button>
+        </div>
+        
+        <!-- Rich Text Editor area instead of textarea -->
+        <div id="body" class="rich-text-editor" contenteditable="true" data-placeholder="Write your message..."></div>
       </div>
       <div class="compose-footer">
         <button id="send-button" class="md-button md-primary rounded" type="submit">Send</button>
@@ -162,12 +175,15 @@
         <div class="read-date" id="detail-meta"></div>
       </div>
     </div>
-    <div id="detail-body" class="read-body"></div>
+    <div id="detail-body" class="read-body rich-text-content"></div>
     <div class="read-actions">
       <button id="reply-button" class="md-button md-outlined" type="button"><span class="material-symbols-outlined">reply</span> Reply</button>
       <button id="detail-close" class="md-button md-text" type="button">Close</button>
     </div>
   </dialog>
+
+  <!-- Dynamic Contacts List -->
+  <datalist id="contacts-list"></datalist>
 
   <script src="app.js"></script>
 </body>
