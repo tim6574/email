@@ -50,7 +50,6 @@ function getMessageId(msg) {
 // Utilities
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-// Sanitize HTML to prevent malicious scripts from rendering in the rich text, while keeping formatting
 function sanitizeRichText(html) {
   const div = document.createElement('div');
   div.innerHTML = html || "";
@@ -135,13 +134,10 @@ function renderMessages() {
   const readList = getReadMessages();
   
   list.innerHTML = messages.map((m, index) => {
-    // Automatically save users to Address Book
     if (m.from) addContact(m.from);
     if (m.to) addContact(m.to);
 
     const person = state.folder === "inbox" ? m.from : `To: ${m.to}`;
-    
-    // Strip HTML from body to create a plain text preview snippet
     const rawPreviewText = String(m.preview || m.body || "").replace(/<[^>]*>?/gm, '');
     const preview = rawPreviewText.replace(/\s+/g," ").substring(0, 80);
     
@@ -168,14 +164,13 @@ function renderMessages() {
 function openMessage(message) {
   state.selectedMessage = message;
   
-  // Mark as read
   if (state.folder === "inbox") {
     const msgId = getMessageId(message);
     const readList = getReadMessages();
     if (!readList.includes(msgId)) {
       readList.push(msgId);
       localStorage.setItem(READ_KEY, JSON.stringify(readList));
-      renderMessages(); // Re-render to remove bold styling
+      renderMessages();
     }
   }
 
@@ -186,7 +181,6 @@ function openMessage(message) {
   $("detail-from").innerHTML = `<strong>${escapeHtml(person)}</strong> <span style="color:var(--sys-on-surface-variant); font-size:12px;">&lt;${escapeHtml(person)}@friendmail.local&gt;</span>`;
   $("detail-avatar").textContent = initials(person);
   
-  // Render sanitized rich text
   $("detail-body").innerHTML = sanitizeRichText(message.body);
   $("reply-button").hidden = state.folder !== "inbox";
   $("message-dialog").showModal();
@@ -200,7 +194,6 @@ function openCompose({to="",subject=""}={}) {
   $("compose-error").textContent = ""; $("compose-form").reset();
   $("recipient").value = to; $("subject").value = subject;
   
-  // Load draft into rich text editor if it's a blank new message
   if (!to && !subject) {
     $("body").innerHTML = localStorage.getItem(DRAFT_KEY) || "";
   } else {
@@ -241,12 +234,19 @@ $("compose-open").addEventListener("click", () => openCompose());
 $("compose-close").addEventListener("click", () => $("compose-dialog").close());
 $("detail-close").addEventListener("click", () => $("message-dialog").close());
 
+// FULLSCREEN TOGGLE LOGIC
+$("compose-maximize").addEventListener("click", () => {
+  const dialog = $("compose-dialog");
+  const isFullscreen = dialog.classList.toggle("fullscreen-mode");
+  $("compose-maximize").innerHTML = isFullscreen 
+    ? '<span class="material-symbols-outlined">fullscreen_exit</span>' 
+    : '<span class="material-symbols-outlined">fullscreen</span>';
+});
+
 $("reply-button").addEventListener("click", () => {
   const message = state.selectedMessage; if (!message) return;
   $("message-dialog").close();
   const subject = String(message.subject || "").toLowerCase().startsWith("re:") ? message.subject : `Re: ${message.subject || ""}`;
-  
-  // Format reply quote
   const plainText = String(message.body || "").replace(/<[^>]*>?/gm, '');
   const quote = `<br><br><div style="border-left: 2px solid #ccc; padding-left: 8px; margin-left: 4px; color: #666;">On ${formatDate(message.created_at)}, ${message.from} wrote:<br>${plainText}</div>`;
   
@@ -257,7 +257,7 @@ $("reply-button").addEventListener("click", () => {
 // Rich Text Toolbar Listeners
 document.querySelectorAll(".format-btn").forEach(btn => {
   btn.addEventListener("click", (e) => {
-    e.preventDefault(); // Keep focus on the editor
+    e.preventDefault(); 
     const command = btn.dataset.command;
     if (command === 'createLink') {
       const url = prompt('Enter link URL (e.g., https://example.com):');
@@ -268,7 +268,6 @@ document.querySelectorAll(".format-btn").forEach(btn => {
   });
 });
 
-// Save draft as you type in rich text area
 $("body").addEventListener("input", (e) => {
   localStorage.setItem(DRAFT_KEY, e.target.innerHTML);
   clearTimeout(draftTimer);
@@ -277,8 +276,6 @@ $("body").addEventListener("input", (e) => {
 
 $("compose-form").addEventListener("submit", async event => {
   event.preventDefault(); $("compose-error").textContent = "";
-  
-  // Check if rich text body is empty
   const htmlBody = $("body").innerHTML.trim();
   if (!htmlBody || htmlBody === "<br>") {
     $("compose-error").textContent = "Please enter a message.";
@@ -295,11 +292,9 @@ $("compose-form").addEventListener("submit", async event => {
       body: htmlBody
     })});
     
-    // Save to contacts upon successful send
     addContact(recipient);
-    
     $("compose-dialog").close();
-    localStorage.removeItem(DRAFT_KEY); // Clear the draft!
+    localStorage.removeItem(DRAFT_KEY); 
     await loadFolder("sent"); showNotice("Message sent.");
   } catch(error) { $("compose-error").textContent = error.message; }
   finally { send.disabled = false; send.textContent = 'Send'; }
@@ -312,31 +307,24 @@ document.addEventListener("keydown", event => {
   const activeElement = document.activeElement;
   const inInput = ["INPUT", "TEXTAREA"].includes(activeElement.tagName) || activeElement.id === "body";
   
-  // Escape always closes dialogs
   if (event.key === "Escape") {
-    if ($("compose-dialog").hasAttribute("open")) $("compose-dialog").close();
+    if ($("compose-dialog").hasAttribute("open")) {
+      $("compose-dialog").close();
+      // Ensure we exit fullscreen if we close via escape key
+      if ($("compose-dialog").classList.contains("fullscreen-mode")) {
+        $("compose-maximize").click(); 
+      }
+    }
     if ($("message-dialog").hasAttribute("open")) $("message-dialog").close();
     return;
   }
   
-  // Don't trigger other shortcuts if typing in a field
   if (inInput || $("auth-view").hidden === false) return;
 
   switch(event.key.toLowerCase()) {
-    case "/": 
-      event.preventDefault(); 
-      $("message-search").focus(); 
-      break;
-    case "c": 
-      event.preventDefault(); 
-      openCompose(); 
-      break;
-    case "r": 
-      if ($("message-dialog").hasAttribute("open")) {
-        event.preventDefault();
-        $("reply-button").click();
-      }
-      break;
+    case "/": event.preventDefault(); $("message-search").focus(); break;
+    case "c": event.preventDefault(); openCompose(); break;
+    case "r": if ($("message-dialog").hasAttribute("open")) { event.preventDefault(); $("reply-button").click(); } break;
   }
 });
 
