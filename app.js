@@ -207,6 +207,10 @@ function openCompose({to="",subject=""}={}) {
     $("body").innerHTML = "";
   }
   
+  // Reset fullscreen state when opening
+  $("compose-dialog").classList.remove("fullscreen");
+  if ($("fullscreen-btn")) $("fullscreen-btn").querySelector("span").textContent = "fullscreen";
+  
   $("compose-dialog").show();
   setTimeout(() => $("recipient").focus(), 50);
 }
@@ -239,6 +243,15 @@ $("message-search").addEventListener("input", updateSearch);
 
 $("compose-open").addEventListener("click", () => openCompose());
 $("compose-close").addEventListener("click", () => $("compose-dialog").close());
+
+// Fullscreen toggle logic
+$("fullscreen-btn").addEventListener("click", () => {
+  const dialog = $("compose-dialog");
+  dialog.classList.toggle("fullscreen");
+  const icon = $("fullscreen-btn").querySelector("span");
+  icon.textContent = dialog.classList.contains("fullscreen") ? "fullscreen_exit" : "fullscreen";
+});
+
 $("detail-close").addEventListener("click", () => $("message-dialog").close());
 
 $("reply-button").addEventListener("click", () => {
