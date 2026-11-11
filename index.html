@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FriendMail</title>
+  <title>FriendMail - Secure Inbox</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Using Inter font to closely mimic Proton's clean typography -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
@@ -16,31 +15,40 @@
 
   <!-- Auth View -->
   <div id="auth-view" class="view-container">
-    <div class="auth-card">
-      <div class="auth-header">
-        <span class="material-symbols-outlined auth-logo">lock</span>
-        <h2>FriendMail</h2>
+    <div class="auth-split">
+      <div class="auth-branding">
+        <div class="brand-badge"><span class="material-symbols-outlined">shield_lock</span> Secure</div>
+        <h1>Privacy by Default.</h1>
+        <p>Experience email the way it was meant to be. Clean, fast, and completely yours.</p>
       </div>
-      <div class="auth-tabs">
-        <button id="login-tab" class="active">Sign in</button>
-        <button id="register-tab">Create account</button>
+      <div class="auth-card-container">
+        <div class="auth-card">
+          <div class="auth-header">
+            <span class="material-symbols-outlined auth-logo">lock</span>
+            <h2>FriendMail</h2>
+          </div>
+          <div class="auth-tabs">
+            <button id="login-tab" class="active">Sign in</button>
+            <button id="register-tab">Create account</button>
+          </div>
+          <h3 id="auth-title">Sign in</h3>
+          <p id="auth-description">Continue to your secure inbox</p>
+          
+          <form id="auth-form">
+            <div id="auth-error" class="error-text" hidden></div>
+            <div class="input-group">
+              <label for="username">Username</label>
+              <input type="text" id="username" required autocomplete="username" placeholder="e.g. yourname">
+            </div>
+            <div class="input-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" required autocomplete="current-password" placeholder="••••••••••••">
+            </div>
+            <div id="password-help" class="help-text" hidden>Use at least 10 characters.</div>
+            <button type="submit" id="auth-submit" class="btn-primary auth-btn">Sign in</button>
+          </form>
+        </div>
       </div>
-      <h3 id="auth-title">Sign in</h3>
-      <p id="auth-description">Continue to your secure inbox</p>
-      
-      <form id="auth-form">
-        <div id="auth-error" class="error-text" hidden></div>
-        <div class="input-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" required autocomplete="username">
-        </div>
-        <div class="input-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" required autocomplete="current-password">
-        </div>
-        <div id="password-help" class="help-text" hidden>Use at least 10 characters.</div>
-        <button type="submit" id="auth-submit" class="btn-primary auth-btn">Sign in</button>
-      </form>
     </div>
   </div>
 
@@ -48,12 +56,15 @@
   <div id="mail-view" class="view-container" hidden>
     <header class="app-header">
       <div class="header-left">
+        <button id="sidebar-toggle" class="icon-btn" title="Toggle Menu">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
         <span class="material-symbols-outlined brand-icon">lock</span>
         <h1>FriendMail</h1>
       </div>
       <div class="header-search">
         <span class="material-symbols-outlined search-icon">search</span>
-        <input type="text" id="message-search" placeholder="Search messages">
+        <input type="text" id="message-search" placeholder="Search messages or contacts (/ to focus)">
       </div>
       <div class="header-right">
         <button id="theme-toggle" class="icon-btn" title="Toggle Theme">
@@ -70,30 +81,35 @@
     </header>
 
     <div class="app-body">
-      <aside class="sidebar">
+      <aside class="sidebar" id="app-sidebar">
         <button id="compose-open" class="btn-primary compose-btn">
-          New message
+          <span class="material-symbols-outlined">edit</span>
+          <span class="sidebar-text">New message</span>
         </button>
         <nav class="folder-list">
           <button class="folder active" data-folder="inbox">
-            <span class="material-symbols-outlined">inbox</span> Inbox 
+            <span class="material-symbols-outlined">inbox</span> 
+            <span class="sidebar-text">Inbox</span>
             <span id="inbox-count" class="badge"></span>
           </button>
           <button class="folder" data-folder="sent">
-            <span class="material-symbols-outlined">send</span> Sent
+            <span class="material-symbols-outlined">send</span> 
+            <span class="sidebar-text">Sent</span>
           </button>
         </nav>
       </aside>
 
       <main class="message-area">
         <div class="toolbar">
-          <button id="refresh-button" class="icon-btn outline" title="Refresh">
-            <span class="material-symbols-outlined">refresh</span>
-          </button>
+          <div class="toolbar-left">
+            <button id="refresh-button" class="icon-btn outline" title="Refresh">
+              <span class="material-symbols-outlined">refresh</span>
+            </button>
+          </div>
           <span id="message-total" class="meta-text"></span>
         </div>
         <div id="message-list">
-          <!-- Messages render here -->
+          <!-- Messages & Skeletons render here -->
         </div>
       </main>
     </div>
@@ -132,10 +148,12 @@
         <button type="button" class="format-btn icon-btn small" data-command="createLink" title="Insert Link"><span class="material-symbols-outlined">link</span></button>
         <button type="button" class="format-btn icon-btn small" data-command="insertUnorderedList" title="Bullet List"><span class="material-symbols-outlined">format_list_bulleted</span></button>
       </div>
-      <div id="body" class="rich-text-editor" contenteditable="true" aria-placeholder="Type a message..."></div>
+      <div id="body" class="rich-text-editor" contenteditable="true" aria-placeholder="Type a secure message..."></div>
       
       <div class="dialog-footer">
-        <button type="submit" id="send-button" class="btn-primary">Send</button>
+        <button type="submit" id="send-button" class="btn-primary">
+          <span class="material-symbols-outlined">send</span> Send
+        </button>
       </div>
     </form>
   </dialog>
@@ -149,7 +167,7 @@
       </button>
     </div>
     <div class="detail-header-info">
-      <div id="detail-avatar" class="avatar"></div>
+      <div id="detail-avatar" class="avatar lg"></div>
       <div class="detail-sender-info">
         <div id="detail-from"></div>
         <div id="detail-meta" class="meta-text"></div>
