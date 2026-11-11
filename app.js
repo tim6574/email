@@ -238,10 +238,7 @@ $("refresh-button").addEventListener("click", () => loadFolder());
 $("message-search").addEventListener("input", updateSearch);
 
 $("compose-open").addEventListener("click", () => openCompose());
-$("compose-close").addEventListener("click", () => {
-    $("compose-dialog").close();
-    $("compose-dialog").style.display = "none";
-});
+$("compose-close").addEventListener("click", () => $("compose-dialog").close());
 $("detail-close").addEventListener("click", () => $("message-dialog").close());
 
 $("reply-button").addEventListener("click", () => {
@@ -302,7 +299,6 @@ $("compose-form").addEventListener("submit", async event => {
     addContact(recipient);
     
     $("compose-dialog").close();
-    $("compose-dialog").style.display = "none";
     localStorage.removeItem(DRAFT_KEY); // Clear the draft!
     await loadFolder("sent"); showNotice("Message sent.");
   } catch(error) { $("compose-error").textContent = error.message; }
@@ -318,10 +314,7 @@ document.addEventListener("keydown", event => {
   
   // Escape always closes dialogs
   if (event.key === "Escape") {
-    if ($("compose-dialog").hasAttribute("open")) {
-        $("compose-dialog").close();
-        $("compose-dialog").style.display = "none";
-    }
+    if ($("compose-dialog").hasAttribute("open")) $("compose-dialog").close();
     if ($("message-dialog").hasAttribute("open")) $("message-dialog").close();
     return;
   }
