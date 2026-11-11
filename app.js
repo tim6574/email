@@ -3,6 +3,8 @@ const TOKEN_KEY = "friendmail_session";
 const THEME_KEY = "friendmail_theme";
 const READ_KEY = "friendmail_read_messages";
 const DRAFT_KEY = "friendmail_draft";
+const CONTACTS_KEY = "friendmail_contacts";
+
 const $ = (id) => document.getElementById(id);
 const state = { mode: "login", folder: "inbox", messages: [], filteredMessages: [], user: null, selectedMessage: null };
 
@@ -17,23 +19,55 @@ async function api(path, options = {}) {
   return data;
 }
 
-// Get array of read message IDs from local storage
+// Contacts (Address Book) Logic
+function getContacts() {
+  try { return JSON.parse(localStorage.getItem(CONTACTS_KEY)) || []; } 
+  catch { return []; }
+}
+function addContact(username) {
+  if (!username) return;
+  const contacts = getContacts();
+  if (!contacts.includes(username)) {
+    contacts.push(username);
+    localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
+    renderContacts();
+  }
+}
+function renderContacts() {
+  const datalist = $("contacts-list");
+  if (datalist) datalist.innerHTML = getContacts().map(c => `<option value="${c}">`).join("");
+}
+
+// Read tracking logic
 function getReadMessages() {
   try { return JSON.parse(localStorage.getItem(READ_KEY)) || []; } 
   catch { return []; }
 }
-
-// Generate a unique ID for a message since the API doesn't provide one
 function getMessageId(msg) {
   return `${msg.created_at}-${msg.from}-${msg.to}`;
 }
 
-// Auto-link URLs in message body
-function linkify(text) {
-  const safeText = escapeHtml(text || "");
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  return safeText.replace(urlRegex, '<a href="$1" target="_blank" class="msg-link">$1</a>');
+// Utilities
+function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+// Sanitize HTML to prevent malicious scripts from rendering in the rich text, while keeping formatting
+function sanitizeRichText(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html || "";
+  const scripts = div.querySelectorAll('script, iframe, object, embed');
+  scripts.forEach(s => s.remove());
+  return div.innerHTML;
 }
+
+function formatDate(value) { 
+  const date = new Date(value); if (Number.isNaN(date.getTime())) return ""; 
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+  }
+  return date.toLocaleDateString([], { month:"short", day:"numeric" }); 
+}
+function initials(name) { const clean = String(name || "?").replace(/^@/, ""); return (clean[0] || "?").toUpperCase(); }
 
 // Toast notification
 let toastTimeout;
@@ -62,18 +96,8 @@ function showMail() {
   $("auth-view").hidden = true; $("mail-view").hidden = false;
   $("signed-in-as").textContent = `@${state.user.username}`;
   $("signed-in-avatar").textContent = initials(state.user.username);
+  renderContacts();
 }
-
-function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-function formatDate(value) { 
-  const date = new Date(value); if (Number.isNaN(date.getTime())) return ""; 
-  const now = new Date();
-  if (date.toDateString() === now.toDateString()) {
-    return date.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
-  }
-  return date.toLocaleDateString([], { month:"short", day:"numeric" }); 
-}
-function initials(name) { const clean = String(name || "?").replace(/^@/, ""); return (clean[0] || "?").toUpperCase(); }
 
 function updateSearch() {
   const query = $("message-search").value.trim().toLowerCase();
@@ -111,8 +135,16 @@ function renderMessages() {
   const readList = getReadMessages();
   
   list.innerHTML = messages.map((m, index) => {
+    // Automatically save users to Address Book
+    if (m.from) addContact(m.from);
+    if (m.to) addContact(m.to);
+
     const person = state.folder === "inbox" ? m.from : `To: ${m.to}`;
-    const preview = String(m.preview || m.body || "").replace(/\s+/g," ");
+    
+    // Strip HTML from body to create a plain text preview snippet
+    const rawPreviewText = String(m.preview || m.body || "").replace(/<[^>]*>?/gm, '');
+    const preview = rawPreviewText.replace(/\s+/g," ").substring(0, 80);
+    
     const isUnread = state.folder === "inbox" && !readList.includes(getMessageId(m));
     const unreadClass = isUnread ? "unread" : "";
     
@@ -154,8 +186,8 @@ function openMessage(message) {
   $("detail-from").innerHTML = `<strong>${escapeHtml(person)}</strong> <span style="color:var(--sys-on-surface-variant); font-size:12px;">&lt;${escapeHtml(person)}@friendmail.local&gt;</span>`;
   $("detail-avatar").textContent = initials(person);
   
-  // Apply smart links
-  $("detail-body").innerHTML = linkify(message.body);
+  // Render sanitized rich text
+  $("detail-body").innerHTML = sanitizeRichText(message.body);
   $("reply-button").hidden = state.folder !== "inbox";
   $("message-dialog").showModal();
 }
@@ -168,9 +200,11 @@ function openCompose({to="",subject=""}={}) {
   $("compose-error").textContent = ""; $("compose-form").reset();
   $("recipient").value = to; $("subject").value = subject;
   
-  // Load draft if it's a blank new message
+  // Load draft into rich text editor if it's a blank new message
   if (!to && !subject) {
-    $("body").value = localStorage.getItem(DRAFT_KEY) || "";
+    $("body").innerHTML = localStorage.getItem(DRAFT_KEY) || "";
+  } else {
+    $("body").innerHTML = "";
   }
   
   $("compose-dialog").show();
@@ -214,21 +248,59 @@ $("reply-button").addEventListener("click", () => {
   const message = state.selectedMessage; if (!message) return;
   $("message-dialog").close();
   const subject = String(message.subject || "").toLowerCase().startsWith("re:") ? message.subject : `Re: ${message.subject || ""}`;
+  
+  // Format reply quote
+  const plainText = String(message.body || "").replace(/<[^>]*>?/gm, '');
+  const quote = `<br><br><div style="border-left: 2px solid #ccc; padding-left: 8px; margin-left: 4px; color: #666;">On ${formatDate(message.created_at)}, ${message.from} wrote:<br>${plainText}</div>`;
+  
   openCompose({to:message.from || "",subject});
+  $("body").innerHTML = quote;
 });
 
-// Save draft as you type
+// Rich Text Toolbar Listeners
+document.querySelectorAll(".format-btn").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    e.preventDefault(); // Keep focus on the editor
+    const command = btn.dataset.command;
+    if (command === 'createLink') {
+      const url = prompt('Enter link URL (e.g., https://example.com):');
+      if (url) document.execCommand(command, false, url);
+    } else {
+      document.execCommand(command, false, null);
+    }
+  });
+});
+
+// Save draft as you type in rich text area
 $("body").addEventListener("input", (e) => {
-  localStorage.setItem(DRAFT_KEY, e.target.value);
+  localStorage.setItem(DRAFT_KEY, e.target.innerHTML);
   clearTimeout(draftTimer);
   draftTimer = setTimeout(() => showNotice("Draft saved to browser"), 1000);
 });
 
 $("compose-form").addEventListener("submit", async event => {
   event.preventDefault(); $("compose-error").textContent = "";
+  
+  // Check if rich text body is empty
+  const htmlBody = $("body").innerHTML.trim();
+  if (!htmlBody || htmlBody === "<br>") {
+    $("compose-error").textContent = "Please enter a message.";
+    return;
+  }
+  
+  const recipient = $("recipient").value.trim();
   const send = $("send-button"); send.disabled = true; send.textContent = "Sending...";
+  
   try {
-    await api("/send", {method:"POST",body:JSON.stringify({to:$("recipient").value.trim(),subject:$("subject").value.trim(),body:$("body").value})});
+    await api("/send", {method:"POST",body:JSON.stringify({
+      to: recipient,
+      subject: $("subject").value.trim(),
+      body: htmlBody
+    })});
+    
+    // Save to contacts upon successful send
+    addContact(recipient);
+    
     $("compose-dialog").close();
     $("compose-dialog").style.display = "none";
     localStorage.removeItem(DRAFT_KEY); // Clear the draft!
@@ -241,8 +313,8 @@ $("theme-toggle").addEventListener("click", () => applyTheme(document.body.class
 
 // Keyboard Shortcuts
 document.addEventListener("keydown", event => {
-  const activeTag = document.activeElement.tagName;
-  const inInput = ["INPUT", "TEXTAREA"].includes(activeTag);
+  const activeElement = document.activeElement;
+  const inInput = ["INPUT", "TEXTAREA"].includes(activeElement.tagName) || activeElement.id === "body";
   
   // Escape always closes dialogs
   if (event.key === "Escape") {
