@@ -10,6 +10,7 @@ const state = { mode: "login", folder: "inbox", messages: [], filteredMessages: 
 
 function token() { return localStorage.getItem(TOKEN_KEY); }
 function setToken(value) { if (value) localStorage.setItem(TOKEN_KEY, value); else localStorage.removeItem(TOKEN_KEY); }
+
 async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   if (token()) headers.Authorization = `Bearer ${token()}`;
@@ -19,7 +20,7 @@ async function api(path, options = {}) {
   return data;
 }
 
-// Contacts (Address Book) Logic
+// Contacts (Address Book)
 function getContacts() {
   try { return JSON.parse(localStorage.getItem(CONTACTS_KEY)) || []; } 
   catch { return []; }
@@ -38,7 +39,7 @@ function renderContacts() {
   if (datalist) datalist.innerHTML = getContacts().map(c => `<option value="${c}">`).join("");
 }
 
-// Read tracking logic
+// Read tracking
 function getReadMessages() {
   try { return JSON.parse(localStorage.getItem(READ_KEY)) || []; } 
   catch { return []; }
@@ -49,8 +50,6 @@ function getMessageId(msg) {
 
 // Utilities
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-
-// Sanitize HTML to prevent malicious scripts from rendering in the rich text, while keeping formatting
 function sanitizeRichText(html) {
   const div = document.createElement('div');
   div.innerHTML = html || "";
@@ -58,7 +57,6 @@ function sanitizeRichText(html) {
   scripts.forEach(s => s.remove());
   return div.innerHTML;
 }
-
 function formatDate(value) { 
   const date = new Date(value); if (Number.isNaN(date.getTime())) return ""; 
   const now = new Date();
@@ -74,19 +72,21 @@ let toastTimeout;
 function showNotice(message, isError = false) {
   const el = $("status-message"); 
   el.textContent = message;
-  el.style.backgroundColor = isError ? "var(--sys-error)" : "#323232";
+  el.style.backgroundColor = isError ? "var(--sys-error)" : "var(--sys-on-surface)";
+  el.style.color = isError ? "#FFF" : "var(--sys-bg)";
   el.hidden = !message;
   clearTimeout(toastTimeout);
   if (message) toastTimeout = setTimeout(() => el.hidden = true, 4000);
 }
 
+// Auth State
 function setMode(mode) {
   state.mode = mode; const login = mode === "login";
   $("login-tab").classList.toggle("active", login); 
   $("register-tab").classList.toggle("active", !login);
-  $("auth-title").textContent = login ? "Welcome back" : "Create your account";
-  $("auth-description").textContent = login ? "Sign in to continue" : "Join FriendMail today";
-  $("auth-submit").textContent = login ? 'Sign In' : 'Create Account';
+  $("auth-title").textContent = login ? "Sign in" : "Create your account";
+  $("auth-description").textContent = login ? "Continue to your secure inbox" : "Join FriendMail today";
+  $("auth-submit").textContent = login ? 'Sign in' : 'Create account';
   $("password").autocomplete = login ? "current-password" : "new-password";
   $("password-help").hidden = login; $("auth-error").hidden = true;
 }
@@ -109,7 +109,7 @@ async function loadFolder(folder = state.folder) {
   state.folder = folder;
   document.querySelectorAll(".folder").forEach(button => button.classList.toggle("active", button.dataset.folder === folder));
   $("message-search").value = "";
-  $("message-list").innerHTML = '<div class="empty-state">Loading...</div>';
+  $("message-list").innerHTML = '<div class="empty-state">Loading messages...</div>';
   try {
     const data = await api(folder === "inbox" ? "/inbox" : "/sent");
     state.messages = data.messages || [];
@@ -118,8 +118,15 @@ async function loadFolder(folder = state.folder) {
     }
     updateSearch();
   } catch (error) {
-    if (/token|authorization/i.test(error.message)) { setToken(null); showAuth(); }
-    else { $("message-list").innerHTML = `<div class="empty-state">Failed to load: ${error.message}</div>`; showNotice(error.message, true); }
+    if (/token|authorization/i.test(error.message)) { 
+      setToken(null); 
+      showAuth(); 
+      $("auth-error").textContent = "Session expired. Please log in again."; 
+      $("auth-error").hidden = false;
+    } else { 
+      $("message-list").innerHTML = `<div class="empty-state">Failed to load: ${error.message}</div>`; 
+      showNotice(error.message, true); 
+    }
   }
 }
 
@@ -128,20 +135,17 @@ function renderMessages() {
   $("message-total").textContent = messages.length > 0 ? `1-${messages.length} of ${messages.length}` : "";
   
   if (!messages.length) {
-    list.innerHTML = `<div class="empty-state"><span class="material-symbols-outlined" style="font-size:48px; opacity:0.5; margin-bottom:16px; display:block;">inventory_2</span><strong>Nothing to see here</strong></div>`;
+    list.innerHTML = `<div class="empty-state">No messages found.</div>`;
     return;
   }
   
   const readList = getReadMessages();
   
   list.innerHTML = messages.map((m, index) => {
-    // Automatically save users to Address Book
     if (m.from) addContact(m.from);
     if (m.to) addContact(m.to);
 
     const person = state.folder === "inbox" ? m.from : `To: ${m.to}`;
-    
-    // Strip HTML from body to create a plain text preview snippet
     const rawPreviewText = String(m.preview || m.body || "").replace(/<[^>]*>?/gm, '');
     const preview = rawPreviewText.replace(/\s+/g," ").substring(0, 80);
     
@@ -150,8 +154,7 @@ function renderMessages() {
     
     return `<div class="message-row ${unreadClass}" data-index="${index}">
       <div class="msg-icons">
-        <span class="material-symbols-outlined" style="font-size: 20px;">check_box_outline_blank</span>
-        <span class="material-symbols-outlined" style="font-size: 20px;">${isUnread ? "mark_email_unread" : "star_border"}</span>
+        <span class="material-symbols-outlined" style="font-size: 18px;">${isUnread ? "mark_email_unread" : "mail"}</span>
       </div>
       <div class="msg-sender">${escapeHtml(person)}</div>
       <div class="msg-content">
@@ -168,14 +171,13 @@ function renderMessages() {
 function openMessage(message) {
   state.selectedMessage = message;
   
-  // Mark as read
   if (state.folder === "inbox") {
     const msgId = getMessageId(message);
     const readList = getReadMessages();
     if (!readList.includes(msgId)) {
       readList.push(msgId);
       localStorage.setItem(READ_KEY, JSON.stringify(readList));
-      renderMessages(); // Re-render to remove bold styling
+      renderMessages();
     }
   }
 
@@ -183,10 +185,9 @@ function openMessage(message) {
   $("detail-subject").textContent = message.subject || "(No subject)";
   
   const person = state.folder === "inbox" ? message.from : message.to;
-  $("detail-from").innerHTML = `<strong>${escapeHtml(person)}</strong> <span style="color:var(--sys-on-surface-variant); font-size:12px;">&lt;${escapeHtml(person)}@friendmail.local&gt;</span>`;
+  $("detail-from").innerHTML = `${escapeHtml(person)} <span style="color:var(--sys-on-surface-variant); font-weight:normal;">&lt;${escapeHtml(person)}@friendmail.local&gt;</span>`;
   $("detail-avatar").textContent = initials(person);
   
-  // Render sanitized rich text
   $("detail-body").innerHTML = sanitizeRichText(message.body);
   $("reply-button").hidden = state.folder !== "inbox";
   $("message-dialog").showModal();
@@ -195,21 +196,15 @@ function openMessage(message) {
 async function enterApp() { const data = await api("/me"); state.user = data.user; showMail(); await loadFolder("inbox"); }
 
 let draftTimer;
-
 function openCompose({to="",subject=""}={}) {
-  $("compose-error").textContent = ""; $("compose-form").reset();
+  $("compose-error").hidden = true; $("compose-form").reset();
   $("recipient").value = to; $("subject").value = subject;
   
-  // Load draft into rich text editor if it's a blank new message
   if (!to && !subject) {
     $("body").innerHTML = localStorage.getItem(DRAFT_KEY) || "";
   } else {
     $("body").innerHTML = "";
   }
-  
-  // Reset fullscreen state when opening
-  $("compose-dialog").classList.remove("fullscreen");
-  if ($("fullscreen-btn")) $("fullscreen-btn").querySelector("span").textContent = "fullscreen";
   
   $("compose-dialog").show();
   setTimeout(() => $("recipient").focus(), 50);
@@ -233,7 +228,7 @@ $("auth-form").addEventListener("submit", async event => {
     const data = await api(state.mode === "login" ? "/login" : "/register", {method:"POST",body:JSON.stringify({username,password})});
     setToken(data.token); state.user = data.user; $("password").value = ""; showMail(); await loadFolder("inbox");
   } catch(error) { $("auth-error").textContent = error.message; $("auth-error").hidden = false; }
-  finally { submit.disabled = false; submit.textContent = state.mode === "login" ? 'Sign In' : 'Create Account'; }
+  finally { submit.disabled = false; submit.textContent = state.mode === "login" ? 'Sign in' : 'Create account'; }
 });
 
 $("logout-button").addEventListener("click", () => { setToken(null); state.user = null; state.messages = []; state.filteredMessages = []; showAuth(); setMode("login"); });
@@ -243,37 +238,38 @@ $("message-search").addEventListener("input", updateSearch);
 
 $("compose-open").addEventListener("click", () => openCompose());
 $("compose-close").addEventListener("click", () => $("compose-dialog").close());
-
-// Fullscreen toggle logic
-$("fullscreen-btn").addEventListener("click", () => {
-  const dialog = $("compose-dialog");
-  dialog.classList.toggle("fullscreen");
-  const icon = $("fullscreen-btn").querySelector("span");
-  icon.textContent = dialog.classList.contains("fullscreen") ? "fullscreen_exit" : "fullscreen";
-});
-
 $("detail-close").addEventListener("click", () => $("message-dialog").close());
+
+// FULLSCREEN TOGGLE (Safe Implementation)
+const maximizeBtn = $("compose-maximize");
+if (maximizeBtn) {
+  maximizeBtn.addEventListener("click", () => {
+    const dialog = $("compose-dialog");
+    const isFullscreen = dialog.classList.toggle("fullscreen-mode");
+    maximizeBtn.innerHTML = isFullscreen 
+      ? '<span class="material-symbols-outlined">fullscreen_exit</span>' 
+      : '<span class="material-symbols-outlined">fullscreen</span>';
+  });
+}
 
 $("reply-button").addEventListener("click", () => {
   const message = state.selectedMessage; if (!message) return;
   $("message-dialog").close();
   const subject = String(message.subject || "").toLowerCase().startsWith("re:") ? message.subject : `Re: ${message.subject || ""}`;
-  
-  // Format reply quote
   const plainText = String(message.body || "").replace(/<[^>]*>?/gm, '');
-  const quote = `<br><br><div style="border-left: 2px solid #ccc; padding-left: 8px; margin-left: 4px; color: #666;">On ${formatDate(message.created_at)}, ${message.from} wrote:<br>${plainText}</div>`;
+  const quote = `<br><br><blockquote>On ${formatDate(message.created_at)}, ${message.from} wrote:<br>${plainText}</blockquote>`;
   
   openCompose({to:message.from || "",subject});
   $("body").innerHTML = quote;
 });
 
-// Rich Text Toolbar Listeners
+// Rich Text
 document.querySelectorAll(".format-btn").forEach(btn => {
   btn.addEventListener("click", (e) => {
-    e.preventDefault(); // Keep focus on the editor
+    e.preventDefault(); 
     const command = btn.dataset.command;
     if (command === 'createLink') {
-      const url = prompt('Enter link URL (e.g., https://example.com):');
+      const url = prompt('Enter link URL:');
       if (url) document.execCommand(command, false, url);
     } else {
       document.execCommand(command, false, null);
@@ -281,20 +277,18 @@ document.querySelectorAll(".format-btn").forEach(btn => {
   });
 });
 
-// Save draft as you type in rich text area
 $("body").addEventListener("input", (e) => {
   localStorage.setItem(DRAFT_KEY, e.target.innerHTML);
   clearTimeout(draftTimer);
-  draftTimer = setTimeout(() => showNotice("Draft saved to browser"), 1000);
+  draftTimer = setTimeout(() => showNotice("Draft saved"), 1000);
 });
 
 $("compose-form").addEventListener("submit", async event => {
-  event.preventDefault(); $("compose-error").textContent = "";
-  
-  // Check if rich text body is empty
+  event.preventDefault(); $("compose-error").hidden = true;
   const htmlBody = $("body").innerHTML.trim();
   if (!htmlBody || htmlBody === "<br>") {
     $("compose-error").textContent = "Please enter a message.";
+    $("compose-error").hidden = false;
     return;
   }
   
@@ -308,48 +302,36 @@ $("compose-form").addEventListener("submit", async event => {
       body: htmlBody
     })});
     
-    // Save to contacts upon successful send
     addContact(recipient);
-    
     $("compose-dialog").close();
-    localStorage.removeItem(DRAFT_KEY); // Clear the draft!
+    localStorage.removeItem(DRAFT_KEY); 
     await loadFolder("sent"); showNotice("Message sent.");
-  } catch(error) { $("compose-error").textContent = error.message; }
+  } catch(error) { $("compose-error").textContent = error.message; $("compose-error").hidden = false; }
   finally { send.disabled = false; send.textContent = 'Send'; }
 });
 
 $("theme-toggle").addEventListener("click", () => applyTheme(document.body.classList.contains("dark") ? "light" : "dark"));
 
-// Keyboard Shortcuts
+// Shortcuts
 document.addEventListener("keydown", event => {
   const activeElement = document.activeElement;
   const inInput = ["INPUT", "TEXTAREA"].includes(activeElement.tagName) || activeElement.id === "body";
   
-  // Escape always closes dialogs
   if (event.key === "Escape") {
-    if ($("compose-dialog").hasAttribute("open")) $("compose-dialog").close();
+    if ($("compose-dialog").hasAttribute("open")) {
+      $("compose-dialog").close();
+      if ($("compose-dialog").classList.contains("fullscreen-mode") && maximizeBtn) maximizeBtn.click();
+    }
     if ($("message-dialog").hasAttribute("open")) $("message-dialog").close();
     return;
   }
   
-  // Don't trigger other shortcuts if typing in a field
   if (inInput || $("auth-view").hidden === false) return;
 
   switch(event.key.toLowerCase()) {
-    case "/": 
-      event.preventDefault(); 
-      $("message-search").focus(); 
-      break;
-    case "c": 
-      event.preventDefault(); 
-      openCompose(); 
-      break;
-    case "r": 
-      if ($("message-dialog").hasAttribute("open")) {
-        event.preventDefault();
-        $("reply-button").click();
-      }
-      break;
+    case "/": event.preventDefault(); $("message-search").focus(); break;
+    case "c": event.preventDefault(); openCompose(); break;
+    case "r": if ($("message-dialog").hasAttribute("open")) { event.preventDefault(); $("reply-button").click(); } break;
   }
 });
 
