@@ -268,3 +268,36 @@ input, textarea { font-family: inherit; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border: 2px solid transparent; background-clip: padding-box; border-radius: 5px; }
 body.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border: 2px solid transparent; background-clip: padding-box; }
+
+/* Unread Message Styling */
+.message-row.unread {
+  background: var(--sys-surface);
+  font-weight: 700; /* Bold text for unread */
+}
+.message-row.unread .msg-sender,
+.message-row.unread .msg-subject,
+.message-row.unread .msg-date {
+  color: var(--sys-on-surface);
+  font-weight: 700;
+}
+.message-row.unread .msg-icons {
+  color: var(--sys-primary); /* Highlight the icon */
+}
+
+/* Smart Links inside Emails */
+.msg-link {
+  color: var(--sys-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.msg-link:hover {
+  text-decoration: underline;
+}
+
+/* Fix for compose dialog state */
+dialog.floating-compose {
+  display: none;
+}
+dialog.floating-compose[open] {
+  display: flex;
+}
