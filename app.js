@@ -1,7 +1,8 @@
-// FriendMail frontend (Material Overhaul). API endpoints remain unchanged.
 const API_BASE = "https://friendmail-api.timothy-091.workers.dev/api";
 const TOKEN_KEY = "friendmail_session";
 const THEME_KEY = "friendmail_theme";
+const READ_KEY = "friendmail_read_messages";
+const DRAFT_KEY = "friendmail_draft";
 const $ = (id) => document.getElementById(id);
 const state = { mode: "login", folder: "inbox", messages: [], filteredMessages: [], user: null, selectedMessage: null };
 
@@ -14,6 +15,24 @@ async function api(path, options = {}) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
   return data;
+}
+
+// Get array of read message IDs from local storage
+function getReadMessages() {
+  try { return JSON.parse(localStorage.getItem(READ_KEY)) || []; } 
+  catch { return []; }
+}
+
+// Generate a unique ID for a message since the API doesn't provide one
+function getMessageId(msg) {
+  return `${msg.created_at}-${msg.from}-${msg.to}`;
+}
+
+// Auto-link URLs in message body
+function linkify(text) {
+  const safeText = escapeHtml(text || "");
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return safeText.replace(urlRegex, '<a href="$1" target="_blank" class="msg-link">$1</a>');
 }
 
 // Toast notification
@@ -48,7 +67,6 @@ function showMail() {
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function formatDate(value) { 
   const date = new Date(value); if (Number.isNaN(date.getTime())) return ""; 
-  // If it's today, show time. Else show Month Day.
   const now = new Date();
   if (date.toDateString() === now.toDateString()) {
     return date.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
@@ -90,14 +108,18 @@ function renderMessages() {
     return;
   }
   
-  list.innerHTML = messages.map((m,index) => {
+  const readList = getReadMessages();
+  
+  list.innerHTML = messages.map((m, index) => {
     const person = state.folder === "inbox" ? m.from : `To: ${m.to}`;
     const preview = String(m.preview || m.body || "").replace(/\s+/g," ");
+    const isUnread = state.folder === "inbox" && !readList.includes(getMessageId(m));
+    const unreadClass = isUnread ? "unread" : "";
     
-    return `<div class="message-row" data-index="${index}">
+    return `<div class="message-row ${unreadClass}" data-index="${index}">
       <div class="msg-icons">
         <span class="material-symbols-outlined" style="font-size: 20px;">check_box_outline_blank</span>
-        <span class="material-symbols-outlined" style="font-size: 20px;">star_border</span>
+        <span class="material-symbols-outlined" style="font-size: 20px;">${isUnread ? "mark_email_unread" : "star_border"}</span>
       </div>
       <div class="msg-sender">${escapeHtml(person)}</div>
       <div class="msg-content">
@@ -113,6 +135,18 @@ function renderMessages() {
 
 function openMessage(message) {
   state.selectedMessage = message;
+  
+  // Mark as read
+  if (state.folder === "inbox") {
+    const msgId = getMessageId(message);
+    const readList = getReadMessages();
+    if (!readList.includes(msgId)) {
+      readList.push(msgId);
+      localStorage.setItem(READ_KEY, JSON.stringify(readList));
+      renderMessages(); // Re-render to remove bold styling
+    }
+  }
+
   $("detail-meta").textContent = formatDate(message.created_at);
   $("detail-subject").textContent = message.subject || "(No subject)";
   
@@ -120,17 +154,26 @@ function openMessage(message) {
   $("detail-from").innerHTML = `<strong>${escapeHtml(person)}</strong> <span style="color:var(--sys-on-surface-variant); font-size:12px;">&lt;${escapeHtml(person)}@friendmail.local&gt;</span>`;
   $("detail-avatar").textContent = initials(person);
   
-  $("detail-body").textContent = message.body || "";
+  // Apply smart links
+  $("detail-body").innerHTML = linkify(message.body);
   $("reply-button").hidden = state.folder !== "inbox";
   $("message-dialog").showModal();
 }
 
 async function enterApp() { const data = await api("/me"); state.user = data.user; showMail(); await loadFolder("inbox"); }
 
+let draftTimer;
+
 function openCompose({to="",subject=""}={}) {
   $("compose-error").textContent = ""; $("compose-form").reset();
   $("recipient").value = to; $("subject").value = subject;
-  $("compose-dialog").show(); // Using display block trick for floating window
+  
+  // Load draft if it's a blank new message
+  if (!to && !subject) {
+    $("body").value = localStorage.getItem(DRAFT_KEY) || "";
+  }
+  
+  $("compose-dialog").show();
   setTimeout(() => $("recipient").focus(), 50);
 }
 
@@ -161,7 +204,10 @@ $("refresh-button").addEventListener("click", () => loadFolder());
 $("message-search").addEventListener("input", updateSearch);
 
 $("compose-open").addEventListener("click", () => openCompose());
-$("compose-close").addEventListener("click", () => $("compose-dialog").close());
+$("compose-close").addEventListener("click", () => {
+    $("compose-dialog").close();
+    $("compose-dialog").style.display = "none";
+});
 $("detail-close").addEventListener("click", () => $("message-dialog").close());
 
 $("reply-button").addEventListener("click", () => {
@@ -171,19 +217,62 @@ $("reply-button").addEventListener("click", () => {
   openCompose({to:message.from || "",subject});
 });
 
+// Save draft as you type
+$("body").addEventListener("input", (e) => {
+  localStorage.setItem(DRAFT_KEY, e.target.value);
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => showNotice("Draft saved to browser"), 1000);
+});
+
 $("compose-form").addEventListener("submit", async event => {
   event.preventDefault(); $("compose-error").textContent = "";
   const send = $("send-button"); send.disabled = true; send.textContent = "Sending...";
   try {
     await api("/send", {method:"POST",body:JSON.stringify({to:$("recipient").value.trim(),subject:$("subject").value.trim(),body:$("body").value})});
-    $("compose-dialog").close(); await loadFolder("sent"); showNotice("Message sent.");
+    $("compose-dialog").close();
+    $("compose-dialog").style.display = "none";
+    localStorage.removeItem(DRAFT_KEY); // Clear the draft!
+    await loadFolder("sent"); showNotice("Message sent.");
   } catch(error) { $("compose-error").textContent = error.message; }
   finally { send.disabled = false; send.textContent = 'Send'; }
 });
 
 $("theme-toggle").addEventListener("click", () => applyTheme(document.body.classList.contains("dark") ? "light" : "dark"));
+
+// Keyboard Shortcuts
 document.addEventListener("keydown", event => {
-  if (event.key === "/" && !["INPUT","TEXTAREA"].includes(document.activeElement.tagName) && !$("mail-view").hidden) { event.preventDefault(); $("message-search").focus(); }
+  const activeTag = document.activeElement.tagName;
+  const inInput = ["INPUT", "TEXTAREA"].includes(activeTag);
+  
+  // Escape always closes dialogs
+  if (event.key === "Escape") {
+    if ($("compose-dialog").hasAttribute("open")) {
+        $("compose-dialog").close();
+        $("compose-dialog").style.display = "none";
+    }
+    if ($("message-dialog").hasAttribute("open")) $("message-dialog").close();
+    return;
+  }
+  
+  // Don't trigger other shortcuts if typing in a field
+  if (inInput || $("auth-view").hidden === false) return;
+
+  switch(event.key.toLowerCase()) {
+    case "/": 
+      event.preventDefault(); 
+      $("message-search").focus(); 
+      break;
+    case "c": 
+      event.preventDefault(); 
+      openCompose(); 
+      break;
+    case "r": 
+      if ($("message-dialog").hasAttribute("open")) {
+        event.preventDefault();
+        $("reply-button").click();
+      }
+      break;
+  }
 });
 
 (async function start() {
