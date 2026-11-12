@@ -4,6 +4,9 @@
   --pm-purple-hover: #5B3DE6;
   --pm-purple-light: #F0EDFF;
   --pm-accent: #111111;
+  [hidden] { 
+  display: none !important; 
+}
   
   /* Light Theme */
   --sys-bg: #F9FAFB;
