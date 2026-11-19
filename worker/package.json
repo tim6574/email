@@ -1,0 +1,12 @@
+{
+  "name": "friendmail-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 migrations apply friendmail-db --remote",
+    "test": "node --experimental-sqlite ../tests/api.test.mjs"
+  },
+  "devDependencies": {"wrangler": "^4.0.0"}
+}

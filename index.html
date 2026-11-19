@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FriendMail — Messages & Friends</title>
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#5623d8">
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Status Toast -->
+  <div id="status-message" hidden></div>
+
+  <!-- Auth View -->
+  <div id="auth-view" class="view-container">
+    <div class="auth-split">
+      <div class="auth-branding">
+        <div class="brand-badge"><span class="material-symbols-outlined">favorite</span> Friends first</div>
+        <h1>Good conversations start here.</h1>
+        <p>Messages, friends, and meaningful connections — all in one beautifully simple place.</p>
+      </div>
+      <div class="auth-card-container">
+        <div class="auth-card">
+          <div class="auth-header">
+            <img src="favicon.png" class="auth-logo-img" alt="FriendMail logo">
+            <h2>FriendMail</h2>
+          </div>
+          <div class="auth-tabs">
+            <button id="login-tab" class="active">Sign in</button>
+            <button id="register-tab">Create account</button>
+          </div>
+          <h3 id="auth-title">Sign in</h3>
+          <p id="auth-description">Continue to your secure inbox</p>
+          
+          <form id="auth-form">
+            <div id="auth-error" class="error-text" hidden></div>
+            <div class="input-group">
+              <label for="username">Username</label>
+              <input type="text" id="username" required autocomplete="username" placeholder="e.g. yourname">
+            </div>
+            <div class="input-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" required autocomplete="current-password" placeholder="••••••••••••">
+            </div>
+            <div id="password-help" class="help-text" hidden>Use at least 10 characters.</div>
+            <button type="submit" id="auth-submit" class="btn-primary auth-btn">Sign in</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mail View -->
+  <div id="mail-view" class="view-container" hidden>
+    <header class="app-header">
+      <div class="header-left">
+        <button id="sidebar-toggle" class="icon-btn" title="Toggle Menu">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <img src="favicon.png" class="brand-mark" alt="">
+        <h1>FriendMail</h1>
+      </div>
+      <div class="header-search" id="header-search">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" id="message-search" placeholder="Search messages or contacts (/ to focus)">
+      </div>
+      <div class="header-right">
+        <button id="theme-toggle" class="icon-btn" title="Toggle Theme">
+          <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+        <button id="profile-open" class="user-profile" title="Edit profile picture" type="button">
+          <span id="signed-in-avatar" class="avatar"></span>
+          <span id="signed-in-as"></span>
+          <span class="material-symbols-outlined profile-edit-icon">edit</span>
+        </button>
+        <button id="logout-button" class="icon-btn" title="Sign out">
+          <span class="material-symbols-outlined">logout</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <aside class="sidebar" id="app-sidebar">
+        <button id="compose-open" class="btn-primary compose-btn">
+          <span class="material-symbols-outlined">edit</span>
+          <span class="sidebar-text">New message</span>
+        </button>
+        <nav class="folder-list">
+          <button class="folder active" data-folder="inbox">
+            <span class="material-symbols-outlined">inbox</span> 
+            <span class="sidebar-text">Inbox</span>
+            <span id="inbox-count" class="badge"></span>
+          </button>
+          <button class="folder" data-folder="sent">
+            <span class="material-symbols-outlined">send</span>
+            <span class="sidebar-text">Sent</span>
+          </button>
+          <button class="folder" data-folder="friends">
+            <span class="material-symbols-outlined">group</span>
+            <span class="sidebar-text">Friends</span>
+            <span id="requests-count" class="badge" hidden></span>
+          </button>
+        </nav>
+      </aside>
+
+      <main class="message-area">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <button id="refresh-button" class="icon-btn outline" title="Refresh">
+              <span class="material-symbols-outlined">refresh</span>
+            </button>
+          </div>
+          <span id="message-total" class="meta-text"></span>
+        </div>
+        <div id="message-list" aria-live="polite">
+          <!-- Messages & Skeletons render here -->
+        </div>
+        <section id="friends-view" class="friends-view" hidden aria-label="Friends and requests">
+          <div class="friends-intro">
+            <div>
+              <span class="eyebrow">YOUR CIRCLE</span>
+              <h2>Friends & connections</h2>
+              <p>Discover people, accept invitations, and keep in touch.</p>
+            </div>
+            <span class="friends-illustration material-symbols-outlined" aria-hidden="true">diversity_3</span>
+          </div>
+          <form id="friend-search-form" class="add-friend-form">
+            <label for="friend-username">Send a request by username</label>
+            <div class="friend-search-row">
+              <input id="friend-username" type="text" placeholder="Enter a username" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" required autocomplete="off">
+              <button type="submit" class="btn-primary"><span class="material-symbols-outlined">person_add</span> Add friend</button>
+            </div>
+          </form>
+          <div class="friends-grid">
+            <section class="friends-panel suggestions-panel">
+              <div class="panel-heading"><div><h3>People to meet</h3><p>Up to five random people, refreshed automatically</p></div><span class="material-symbols-outlined">auto_awesome</span></div>
+              <div id="friends-suggestions" class="person-list"></div>
+            </section>
+            <section class="friends-panel">
+              <div class="panel-heading"><div><h3>Your friends <span id="friends-total" class="section-count"></span></h3><p>Your accepted connections</p></div><span class="material-symbols-outlined">favorite</span></div>
+              <div id="friends-accepted" class="person-list"></div>
+            </section>
+            <section class="friends-panel">
+              <div class="panel-heading"><div><h3>Incoming requests <span id="incoming-total" class="section-count"></span></h3><p>People who want to connect</p></div><span class="material-symbols-outlined">mark_email_unread</span></div>
+              <div id="friends-incoming" class="person-list"></div>
+            </section>
+            <section class="friends-panel">
+              <div class="panel-heading"><div><h3>Sent requests <span id="outgoing-total" class="section-count"></span></h3><p>Waiting for a response</p></div><span class="material-symbols-outlined">schedule_send</span></div>
+              <div id="friends-outgoing" class="person-list"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Compose Dialog -->
+  <dialog id="compose-dialog" class="modal proton-modal">
+    <div class="dialog-header">
+      <h3>New message</h3>
+      <div class="dialog-controls">
+        <button type="button" id="compose-maximize" class="icon-btn small" title="Toggle Fullscreen">
+          <span class="material-symbols-outlined">fullscreen</span>
+        </button>
+        <button type="button" id="compose-close" class="icon-btn small" title="Close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+    </div>
+    <form id="compose-form">
+      <div id="compose-error" class="error-text" hidden></div>
+      <div class="compose-field">
+        <label for="recipient">To</label>
+        <input type="text" id="recipient" required list="contacts-list">
+        <datalist id="contacts-list"></datalist>
+      </div>
+      <div class="compose-field border-bottom">
+        <label for="subject">Subject</label>
+        <input type="text" id="subject">
+      </div>
+      
+      <div class="rich-text-toolbar">
+        <button type="button" class="format-btn icon-btn small" data-command="bold" title="Bold"><span class="material-symbols-outlined">format_bold</span></button>
+        <button type="button" class="format-btn icon-btn small" data-command="italic" title="Italic"><span class="material-symbols-outlined">format_italic</span></button>
+        <button type="button" class="format-btn icon-btn small" data-command="underline" title="Underline"><span class="material-symbols-outlined">format_underlined</span></button>
+        <div class="divider"></div>
+        <button type="button" class="format-btn icon-btn small" data-command="createLink" title="Insert Link"><span class="material-symbols-outlined">link</span></button>
+        <button type="button" class="format-btn icon-btn small" data-command="insertUnorderedList" title="Bullet List"><span class="material-symbols-outlined">format_list_bulleted</span></button>
+      </div>
+      <div id="body" class="rich-text-editor" contenteditable="true" aria-placeholder="Type a secure message..."></div>
+      
+      <div class="dialog-footer">
+        <button type="submit" id="send-button" class="btn-primary">
+          <span class="material-symbols-outlined">send</span> Send
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Message Detail Dialog -->
+  <dialog id="message-dialog" class="modal detail-modal">
+    <div class="dialog-header">
+      <h3 id="detail-subject"></h3>
+      <button type="button" id="detail-close" class="icon-btn small" title="Close">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="detail-header-info">
+      <div id="detail-avatar" class="avatar lg"></div>
+      <div class="detail-sender-info">
+        <div id="detail-from"></div>
+        <div id="detail-meta" class="meta-text"></div>
+      </div>
+    </div>
+    <div id="detail-body" class="detail-content"></div>
+    <div class="dialog-footer">
+      <button type="button" id="reply-button" class="btn-primary outline">
+        <span class="material-symbols-outlined" style="font-size:18px;">reply</span> Reply
+      </button>
+    </div>
+  </dialog>
+
+  <!-- Profile Picture Dialog -->
+  <dialog id="profile-dialog" class="modal profile-dialog">
+    <div class="dialog-header">
+      <h3>My profile</h3>
+      <button type="button" id="profile-close" class="icon-btn small" title="Close"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="profile-dialog-body">
+      <div id="profile-avatar" class="avatar profile-avatar"></div>
+      <h3 id="profile-name"></h3>
+      <p>Personalize how you appear to friends.</p>
+      <label for="avatar-upload" class="btn-primary profile-upload-btn"><span class="material-symbols-outlined">add_photo_alternate</span> Upload PNG</label>
+      <input type="file" id="avatar-upload" accept=".png,image/png" hidden>
+      <p class="meta-text">PNG only · Automatically resized · Maximum 2 MB</p>
+      <button id="avatar-remove" type="button" class="text-btn">Remove profile picture</button>
+    </div>
+  </dialog>
+
+  <script src="icons.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
