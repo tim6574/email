@@ -89,8 +89,8 @@ body {
 .avatar { flex-shrink: 0; overflow: hidden; position: relative; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
 .avatar.large { width: 46px; height: 46px; font-size: 19px; }
-.brand-mark { width: 32px; height: 32px; object-fit: contain; border-radius: 9px; }
-.auth-logo-img { width: 42px; height: 42px; border-radius: 11px; }
+.brand-mark { display: inline-block; flex: 0 0 32px; width: 32px; height: 32px; max-width: 32px; max-height: 32px; border-radius: 9px; background: url("favicon.png?v=logo-fix-2") center / contain no-repeat; }
+.auth-logo-img { display: inline-block; flex: 0 0 42px; width: 42px; height: 42px; max-width: 42px; max-height: 42px; border-radius: 11px; background: url("favicon.png?v=logo-fix-2") center / contain no-repeat; }
 .profile-edit-icon { font-size: 14px !important; opacity: .65; }
 
 /* Buttons */

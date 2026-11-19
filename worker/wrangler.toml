@@ -1,0 +1,14 @@
+name = "friendmail-api"
+main = "index.js"
+compatibility_date = "2025-07-01"
+
+# Change database_id to the real ID displayed by `npx wrangler d1 create friendmail-db`.
+[[d1_databases]]
+binding = "DB"
+database_name = "friendmail-db"
+database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
+
+[vars]
+# Comma-separated exact origins; NO paths or trailing slashes. Add your GitHub Pages
+# URL and any custom domain. During development you may use http://localhost:8000.
+ALLOWED_ORIGINS = "http://localhost:8000,https://YOUR-USERNAME.github.io"
